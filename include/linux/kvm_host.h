@@ -435,6 +435,7 @@ static inline void kvm_migrate_timers(struct kvm_vcpu *vcpu)
 enum kvm_stat_kind {
 	KVM_STAT_VM,
 	KVM_STAT_VCPU,
+	KVM_STAT_GUESTS,
 };
 
 struct kvm_stats_debugfs_item {
