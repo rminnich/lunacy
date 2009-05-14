@@ -128,6 +128,7 @@ struct kvm {
 	struct rw_semaphore slots_lock;
 	struct mm_struct *mm; /* userspace tied to this vm */
 	int nmemslots;
+	int status;
 	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
 					KVM_PRIVATE_MEM_SLOTS];
 	struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
@@ -435,6 +436,7 @@ static inline void kvm_migrate_timers(struct kvm_vcpu *vcpu)
 enum kvm_stat_kind {
 	KVM_STAT_VM,
 	KVM_STAT_VCPU,
+	KVM_STAT_GUESTS,
 };
 
 struct kvm_stats_debugfs_item {

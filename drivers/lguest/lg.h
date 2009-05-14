@@ -104,6 +104,15 @@ struct lguest
 
 	/* Dead? */
 	const char *dead;
+
+	/* status of guests. This is writeable from both guest and host. 
+	 * standard usage: sets it to arbitrary value. 
+	 * Host reads it. For a simple watchdog timer usage, 
+	 * a program on the host could set it to 0, and require guest
+	 * to set it to non-zero value within a certain time, else
+	 * guest must die. Read/write is via debugfs.
+	 */
+	unsigned long status;
 };
 
 extern struct mutex lguest_lock;
