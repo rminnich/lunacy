@@ -26,9 +26,9 @@ struct pgdir
 struct lguest_pages
 {
 	/* This is the stack page mapped rw in guest */
-	char spare[PAGE_SIZE - sizeof(struct lguest_regs)];
+	char spare[PAGE_SIZE - sizeof(struct lguest_regs) - sizeof(struct lguest_wr_state)];
 	struct lguest_regs regs;
-
+	struct lguest_wr_state wrstate;
 	/* This is the host state & guest descriptor page, ro in guest */
 	struct lguest_ro_state state;
 } __attribute__((aligned(PAGE_SIZE)));
