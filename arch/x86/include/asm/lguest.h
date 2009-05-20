@@ -49,7 +49,16 @@ struct lguest_regs {
 	unsigned long ss;
 };
 
-/* This is a guest-specific page (mapped ro) into the guest. */
+/* This is status information communicated by the guest to the host. 
+ * This is designed to be a low-latency, low-bandwidth path. 
+ * i.e., not much data, but data which can be communicated without a lot
+ * of fuss. Visible in debugfs. 
+ */
+struct lguest_wr_state {
+       u32 status;
+};
+
+ /* This is a guest-specific page (mapped ro) into the guest. */
 struct lguest_ro_state {
 	/* Host information we need to restore when we switch back. */
 	u32 host_cr3;
