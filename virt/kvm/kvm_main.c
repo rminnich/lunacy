@@ -2208,9 +2208,69 @@ static int vcpu_stat_get(void *_offset, u64 *val)
 
 DEFINE_SIMPLE_ATTRIBUTE(vcpu_stat_fops, vcpu_stat_get, NULL, "%llu\n");
 
+static int __gueststat_open(struct inode *inode, struct file *file)
+{
+	printk("Greetings from gueststat_open\n");
+	/* go for the gold: 250 VMs * 18 bytes is around one page */
+	file->private_data = kmalloc(4096, GFP_KERNEL);
+	if (! file->private_data)
+		return -ENOMEM;
+	return 0;
+}
+
+/* gueststat_read returns integral read results in the form %08x %08x\n, i.e. in multiples of 18 
+ * bytes. It stupidly returns an error if offset is not a multiple of 18. It will return as much as it can
+ *given that restriction. It can get smarter later if we need to. 
+ */
+
+static ssize_t __gueststat_read(struct file *filp, char __user *buf,
+			 size_t len, loff_t *ppos)
+{
+	struct kvm *kvm;
+	char *readbuf;
+	int which = *ppos / 18;
+	int i = 0;
+	int amt = 0;
+
+	if (*ppos && (~18))
+		return -EINVAL;
+
+	readbuf = filp->private_data;
+	if (len > 4096)
+		len = 4096;
+	spin_lock(&kvm_lock);
+	list_for_each_entry(kvm, &vm_list, vm_list) {
+		if (which > i) {
+			i++;
+			continue;
+		}
+		snprintf(readbuf + amt, 4096 - amt, "%08x %08x\n", i, kvm->status);
+		amt += 18;
+		if (len - amt < 18)
+			break;
+		i++;
+	}
+	spin_unlock(&kvm_lock);
+	amt -= copy_to_user(buf, readbuf, amt);
+	return amt;
+}
+
+int __gueststat_close(struct inode *inode, struct file *file)
+{
+	kfree(file->private_data);
+	return 0;
+}
+static struct file_operations  __gueststat_fops = {
+	.owner	 = THIS_MODULE,
+	.open	 = __gueststat_open,
+	.release = __gueststat_close,
+	.read	 = __gueststat_read,
+};
+
 static struct file_operations *stat_fops[] = {
 	[KVM_STAT_VCPU] = &vcpu_stat_fops,
 	[KVM_STAT_VM]   = &vm_stat_fops,
+	[KVM_STAT_GUESTS]   = &__gueststat_fops,
 };
 
 static void kvm_init_debug(void)

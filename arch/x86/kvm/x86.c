@@ -67,6 +67,7 @@ static u64 __read_mostly efer_reserved_bits = 0xfffffffffffffffeULL;
 
 #define VM_STAT(x) offsetof(struct kvm, stat.x), KVM_STAT_VM
 #define VCPU_STAT(x) offsetof(struct kvm_vcpu, stat.x), KVM_STAT_VCPU
+#define VCPU_GUESTSTAT(x) 0, KVM_STAT_GUESTS
 
 static int kvm_dev_ioctl_get_supported_cpuid(struct kvm_cpuid2 *cpuid,
 				    struct kvm_cpuid_entry2 __user *entries);
@@ -111,6 +112,7 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
 	{ "mmu_unsync_global", VM_STAT(mmu_unsync_global) },
 	{ "remote_tlb_flush", VM_STAT(remote_tlb_flush) },
 	{ "largepages", VM_STAT(lpages) },
+	{ "gueststatus", 0, KVM_STAT_GUESTS},
 	{ NULL }
 };
 
