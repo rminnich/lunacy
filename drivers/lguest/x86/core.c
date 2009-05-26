@@ -438,6 +438,16 @@ static void adjust_pge(void *on)
 		write_cr4(read_cr4() & ~X86_CR4_PGE);
 }
 
+static int __gueststat_open(struct inode *inode, struct file *file)
+{
+	printk("Greetings from gueststat_open\n");
+	/* go for the gold: 256 VMs * 16 bytes is < one page */
+	file->private_data = kmalloc(4096, GFP_KERNEL);
+	if (! file->private_data)
+		return -ENOMEM;
+	return 0;
+}
+
 /* gueststat_read returns integral read results in the form %06x %08x\n, 
  * i.e. in multiples of 18 
  * bytes. It stupidly returns an error if offset is not a multiple of 18. 
@@ -459,6 +469,9 @@ static ssize_t __gueststat_read(struct file *filp, char __user *buf,
 	readbuf = filp->private_data;
 	if (len > 4096)
 		len = 4096;
+
+	if (which > 255)
+		return 0;
 /*
 	list_for_each_entry(kvm, &vm_list, vm_list) {
 		if (which > i) {
@@ -466,7 +479,8 @@ static ssize_t __gueststat_read(struct file *filp, char __user *buf,
 			continue;
 		}
 */
-		snprintf(readbuf + amt, 4096 - amt, "%08x %08x\n", i, i);
+	for(i = which; ; i++) {
+		snprintf(readbuf + amt, 4096 - amt, "%06x %08x\n", i, i);
 		amt += 16;
 		if (len - amt < 16)
 			break;
@@ -476,7 +490,7 @@ static ssize_t __gueststat_read(struct file *filp, char __user *buf,
 	return amt;
 }
 
-int __gueststat_close(struct inode *inode, struct file *file)
+static int __gueststat_close(struct inode *inode, struct file *file)
 {
 	kfree(file->private_data);
 	return 0;
