@@ -26,9 +26,9 @@ struct pgdir
 struct lguest_pages
 {
 	/* This is the stack page mapped rw in guest */
-	char spare[PAGE_SIZE - sizeof(struct lguest_regs)];
+	char spare[PAGE_SIZE - sizeof(struct lguest_regs) - sizeof(struct lguest_wr_state)];
 	struct lguest_regs regs;
-
+	struct lguest_wr_state wrstate;
 	/* This is the host state & guest descriptor page, ro in guest */
 	struct lguest_ro_state state;
 } __attribute__((aligned(PAGE_SIZE)));
@@ -104,6 +104,15 @@ struct lguest
 
 	/* Dead? */
 	const char *dead;
+
+	/* status of guests. This is writeable from both guest and host. 
+	 * standard usage: sets it to arbitrary value. 
+	 * Host reads it. For a simple watchdog timer usage, 
+	 * a program on the host could set it to 0, and require guest
+	 * to set it to non-zero value within a certain time, else
+	 * guest must die. Read/write is via debugfs.
+	 */
+	unsigned long status;
 };
 
 extern struct mutex lguest_lock;
