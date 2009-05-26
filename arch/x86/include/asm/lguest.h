@@ -56,7 +56,7 @@ struct lguest_regs {
  */
 struct lguest_wr_state {
 	u32 status;
-}
+};
 
 /* This is a guest-specific page (mapped ro) into the guest. */
 struct lguest_ro_state {

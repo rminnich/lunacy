@@ -438,6 +438,76 @@ static void adjust_pge(void *on)
 		write_cr4(read_cr4() & ~X86_CR4_PGE);
 }
 
+/* gueststat_read returns integral read results in the form %06x %08x\n, 
+ * i.e. in multiples of 18 
+ * bytes. It stupidly returns an error if offset is not a multiple of 18. 
+ * It will return as much as it can
+ *given that restriction. It can get smarter later if we need to. 
+ */
+
+static ssize_t __gueststat_read(struct file *filp, char __user *buf,
+			 size_t len, loff_t *ppos)
+{
+	char *readbuf;
+	int which = *ppos / 16;
+	int i = 0;
+	int amt = 0;
+
+	if (*ppos && (~16))
+		return -EINVAL;
+
+	readbuf = filp->private_data;
+	if (len > 4096)
+		len = 4096;
+/*
+	list_for_each_entry(kvm, &vm_list, vm_list) {
+		if (which > i) {
+			i++;
+			continue;
+		}
+*/
+		snprintf(readbuf + amt, 4096 - amt, "%08x %08x\n", i, i);
+		amt += 16;
+		if (len - amt < 16)
+			break;
+		i++;
+	}
+	amt -= copy_to_user(buf, readbuf, amt);
+	return amt;
+}
+
+int __gueststat_close(struct inode *inode, struct file *file)
+{
+	kfree(file->private_data);
+	return 0;
+}
+static struct file_operations  __gueststat_fops = {
+	.owner	 = THIS_MODULE,
+	.open	 = __gueststat_open,
+	.release = __gueststat_close,
+	.read	 = __gueststat_read,
+};
+
+struct dentry *lguest_debugfs_dir, *lguest_status_file;
+
+static void lguest_init_debug(void)
+{
+	struct lguest_stats_debugfs_item *p;
+
+	lguest_debugfs_dir = debugfs_create_dir("lguest", NULL);
+	if (lguest_debugfs_dir > NULL) 
+		lguest_status_file = debugfs_create_file("state", 0444, 
+			lguest_debugfs_dir, NULL, __gueststat_fops);
+}
+
+static void lguest_exit_debug(void)
+{
+	struct lguest_stats_debugfs_item *p;
+
+	debugfs_remove(lguest_status_file);
+	debugfs_remove(lguest_debugfs_dir);
+}
+
 /*H:020 Now the Switcher is mapped and every thing else is ready, we need to do
  * some more i386-specific initialization. */
 void __init lguest_arch_host_init(void)
