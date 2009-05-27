@@ -45,6 +45,7 @@
 #include <asm/lguest.h>
 #include <asm/uaccess.h>
 #include <asm/i387.h>
+#include <linux/debugfs.h>
 #include "../lg.h"
 
 static int cpu_had_pge;
@@ -506,20 +507,20 @@ struct dentry *lguest_debugfs_dir, *lguest_status_file;
 
 static void lguest_init_debug(void)
 {
-	struct lguest_stats_debugfs_item *p;
-
+#if CONFIG_DEBUG_FS==1
 	lguest_debugfs_dir = debugfs_create_dir("lguest", NULL);
-	if (lguest_debugfs_dir > NULL) 
+	if (lguest_debugfs_dir)
 		lguest_status_file = debugfs_create_file("state", 0444, 
-			lguest_debugfs_dir, NULL, __gueststat_fops);
+			lguest_debugfs_dir, NULL, &__gueststat_fops);
+#endif
 }
 
 static void lguest_exit_debug(void)
 {
-	struct lguest_stats_debugfs_item *p;
-
+#if CONFIG_DEBUG_FS==1
 	debugfs_remove(lguest_status_file);
 	debugfs_remove(lguest_debugfs_dir);
+#endif
 }
 
 /*H:020 Now the Switcher is mapped and every thing else is ready, we need to do
@@ -631,6 +632,7 @@ void __init lguest_arch_host_init(void)
 		/* Turn off the feature in the global feature set. */
 		clear_cpu_cap(&boot_cpu_data, X86_FEATURE_PGE);
 	}
+	lguest_init_debug();
 	put_online_cpus();
 };
 /*:*/
@@ -644,6 +646,7 @@ void __exit lguest_arch_host_fini(void)
 		/* adjust_pge's argument "1" means set PGE. */
 		on_each_cpu(adjust_pge, (void *)1, 1);
 	}
+	lguest_exit_debug();
 	put_online_cpus();
 }
 

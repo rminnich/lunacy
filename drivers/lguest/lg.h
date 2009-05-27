@@ -113,6 +113,10 @@ struct lguest
 	 * guest must die. Read/write is via debugfs.
 	 */
 	unsigned long status;
+	/* my global id. This is used as an index into the global data. 
+	 * this is the only way to get info from guests to, e.g., debugfs 
+	 */
+	unsigned int gid;
 };
 
 extern struct mutex lguest_lock;
